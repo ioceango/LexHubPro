@@ -3,7 +3,6 @@
 # ------------------------------------------------------------------------------
 #   cp .env.example .env && docker compose build && docker compose up -d
 # 详见 docs/rules/08-deployment.md。
-# 已有数据卷 legalguard_* 需改名为 lexhubpro_* 或覆盖卷名，否则会看到空库。
 # ==============================================================================
 
 services:
@@ -121,11 +120,10 @@ services:
       HOST: 0.0.0.0
       PORT: 8000
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      # 供 OIDC 登出回跳使用；缺失时后端会回退到请求 host 并记 WARNING
+      # 邮件链接与前端站点地址；缺失时后端回退到请求 host
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       PYTHON_BACKEND_URL: ${PYTHON_BACKEND_URL:-http://localhost:8000}
-      # 业务可调参数，语义见 .env.example
-      REVIEW_MODEL: ${REVIEW_MODEL:-claude-opus-5}
+      # 业务可调参数，语义见 .env.example。审查模型由用户在「模型配置」启用，无平台默认。
       REVIEW_TEMPERATURE: ${REVIEW_TEMPERATURE:-0.2}
       REVIEW_MAX_TOKENS: ${REVIEW_MAX_TOKENS:-8192}
       REVIEW_MAX_CONTRACT_CHARS: ${REVIEW_MAX_CONTRACT_CHARS:-60000}

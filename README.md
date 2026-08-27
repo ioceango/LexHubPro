@@ -6,6 +6,14 @@
 
 规约正文在 [`.agent/`](.agent/README.md)，细则在 [`docs/rules/`](docs/README.md)。本文件是给人读的入口，不另立一套规则。
 
+### 界面预览
+
+无在线演示环境。下列截图来自仓库内 Playwright 归档，可先看效果再部署。
+
+| 首页 | 登录 |
+|------|------|
+| ![首页](docs/features/FEAT-011-rules-pointers-mcp-skills/test-report/S01-home-entry.png) | ![登录](docs/features/FEAT-011-rules-pointers-mcp-skills/test-report/S02-login-entry.png) |
+
 ## 项目架构
 
 前后端分离。浏览器只打同源 `/api`，由前端 Nginx 反代到 FastAPI。
@@ -121,8 +129,7 @@ LexHubPro/
 | 项 | 说明 |
 |----|------|
 | 索引状态收口 | [`docs/features/README.md`](docs/features/README.md) 里 FEAT-005 / 006 仍标「验证中」、FEAT-007 仍标「开发中」，后续 FEAT 已完成自托管与分层，索引未关账。 |
-| Git 仓库 | 工作区可以没有 `.git`。一旦初始化，提交与分支必须对齐 `FEAT-NNN` / `BUG-NNN`（[09](docs/rules/09-git-commit-and-branch.md)）。 |
-| `.env.example` 残留 | 仍写 `REVIEW_MODEL=claude-opus-5`、OIDC 回跳、`MGX_IGNORE_INIT_TABLES` 等过时注释；审查实际用用户启用模型。 |
+| Git 提交 | 提交主题与分支须对齐 `FEAT-NNN` / `BUG-NNN`（[09](docs/rules/09-git-commit-and-branch.md)）。 |
 | Trae 指针文件 | 本仓库未放 `.trae/rules`。Trae 用根 `AGENTS.md` 即可；若要专有入口，只加**指向 `.agent/` 的路标**，禁止复制红线。 |
 | 无 CI | 交付前在本地跑 `bash scripts/verify.sh --docs-only`，改代码再跑对应 pytest / lint / Playwright。 |
 
@@ -150,7 +157,7 @@ docker compose up -d
 
 首次打开站点后：注册并验证邮箱 → 「模型配置」保存 Key 并启用一个模型 → 上传 PDF 审查。
 
-已有旧卷名 `legalguard_*` 需改名为 `lexhubpro_*`，否则会看到空库。回滚：换镜像 tag 后 `docker compose up -d`；结构变更以该迭代 `plan.md` 为准。
+回滚：换镜像 tag 后 `docker compose up -d`；结构变更以该迭代 `plan.md` 为准。
 
 ## 本地开发注意事项
 

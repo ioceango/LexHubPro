@@ -20,8 +20,7 @@ docker compose up -d
 
 - JWT 只配 `JWT_SECRET_KEY`（≥32 字符）。
 - MinIO 预签名用 `MINIO_PUBLIC_ENDPOINT`。
-- 已有 `legalguard_*` 数据卷需手工改名为 `lexhubpro_*` 或在 compose 中覆盖卷名，否则会看到空库。
-- 平台内建 AI 网关不可用时，审查需另行提供模型凭据。
+- 审查模型：登录后在「模型配置」保存 DeepSeek / OpenRouter Key 并启用一个；未启用则无法审查。
 
 ## 2. 回滚
 

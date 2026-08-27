@@ -257,6 +257,23 @@ check_root_readme() {
   echo "  根 README.md：架构/功能/目录/TODO/部署/本地开发与 Codex/Claude/DeepSeek/Trae/Cursor 入口已覆盖"
 }
 
+# 首次部署样例不得再出现已废弃的平台模型 / OIDC / MGX 开关
+check_first_deploy_example() {
+  local example="$ROOT_DIR/.env.example"
+  local hits
+
+  if [ ! -f "$example" ] || [ ! -s "$example" ]; then
+    add_issue "缺少 .env.example（首次部署配置样例）"
+    return
+  fi
+  hits=$(grep -E 'claude-opus-5|OIDC|MGX_IGNORE_INIT_TABLES' "$example" || true)
+  if [ -n "$hits" ]; then
+    add_issue ".env.example 仍含过时首次部署项（claude-opus-5 / OIDC / MGX_IGNORE_INIT_TABLES）"
+    return
+  fi
+  echo "  .env.example：无 claude-opus-5 / OIDC / MGX_IGNORE_INIT_TABLES"
+}
+
 # 执行文档合规校验，通过返回 0，否则返回 1
 run_docs_gate() {
   log_section "⓿ 文档合规 gate"
@@ -266,6 +283,7 @@ run_docs_gate() {
   check_tool_pointers
   check_ddl_catalog
   check_root_readme
+  check_first_deploy_example
   scan_category "$FEATURES_DIR" '^FEAT-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' "docs/features/README.md" "需求(FEAT)"
   scan_category "$BUGFIX_DIR" '^BUG-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' "docs/bug-fix/README.md" "缺陷(BUG)"
 
