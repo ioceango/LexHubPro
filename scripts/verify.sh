@@ -34,7 +34,7 @@ REQUIRED_DOCS=(spec.md plan.md checklist.md test-report.md)
 # .agent/ 跨工具规约必需文件（缺一不可）
 AGENT_SPEC_DOCS=(README.md architecture.md rules.md constraints.md workflow.md verification.md design.md)
 # 各 AI 编码工具入口指针文件（必须存在、非空且指向 .agent/）
-TOOL_POINTERS=(AGENTS.md CLAUDE.md .grok/rules/00-lexhubpro-rules.md)
+TOOL_POINTERS=(AGENTS.md CLAUDE.md .grok/rules/00-lexhubpro-rules.md .trae/rules/00-lexhubpro-rules.md)
 # 视为「未完成占位」的标记
 PLACEHOLDER_PATTERNS='TODO|待填写|待补充|FIXME|<占位|XXX-占位'
 
@@ -274,6 +274,28 @@ check_first_deploy_example() {
   echo "  .env.example：无 claude-opus-5 / OIDC / MGX_IGNORE_INIT_TABLES"
 }
 
+# README 已关闭的待办不得再作为敞口；FEAT-005/006/007 不得仍标开发中/验证中
+check_closed_root_todos() {
+  local index="$FEATURES_DIR/README.md"
+  local readme="$ROOT_DIR/README.md"
+  local ci
+  local row
+
+  if grep -E '\| FEAT-00[567] \|.*\| (验证中|开发中) \|' "$index" >/dev/null; then
+    add_issue "docs/features/README.md 中 FEAT-005/006/007 仍为验证中或开发中（后续自托管/分层已落地，须关账）"
+  fi
+  for row in '索引状态收口' 'Trae 指针文件' '无 CI'; do
+    if grep -F "| $row |" "$readme" >/dev/null; then
+      add_issue "根 README.md TODO 仍把「$row」列为敞口"
+    fi
+  done
+  ci=$(find "$ROOT_DIR/.github/workflows" -name '*.yml' -o -name '*.yaml' 2>/dev/null | head -20)
+  if [ -z "$ci" ] || ! grep -q 'scripts/verify.sh --docs-only' "$ROOT_DIR"/.github/workflows/* 2>/dev/null; then
+    add_issue "缺少 CI：.github/workflows 须调用 bash scripts/verify.sh --docs-only"
+  fi
+  echo "  根 TODO 收口与 FEAT-005/006/007 索引状态已检查"
+}
+
 # 执行文档合规校验，通过返回 0，否则返回 1
 run_docs_gate() {
   log_section "⓿ 文档合规 gate"
@@ -284,6 +306,7 @@ run_docs_gate() {
   check_ddl_catalog
   check_root_readme
   check_first_deploy_example
+  check_closed_root_todos
   scan_category "$FEATURES_DIR" '^FEAT-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' "docs/features/README.md" "需求(FEAT)"
   scan_category "$BUGFIX_DIR" '^BUG-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$' "docs/bug-fix/README.md" "缺陷(BUG)"
 

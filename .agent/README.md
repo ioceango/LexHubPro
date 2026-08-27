@@ -36,6 +36,7 @@
 | Claude Code | 读取 `CLAUDE.md` | `CLAUDE.md`（指针）→ `.agent/` |
 | DeepSeek harness (dsh) | 未见官方公开的仓库指令文件约定 | 按业界通用约定走根 `AGENTS.md`（指针）→ `.agent/` |
 | Cursor / Jules / Copilot 等 | 通用 `AGENTS.md` 约定 | 根 `AGENTS.md`（指针）→ `.agent/` |
+| Trae | 读 `AGENTS.md`；项目规则目录 `.trae/rules/` | `AGENTS.md`（指针）+ `.trae/rules/00-lexhubpro-rules.md`（指针）→ `.agent/` |
 
 说明：
 - `AGENTS.md` 是跨工具通用的开放约定（"给 agent 看的 README"），因此作为兜底入口最稳妥。

@@ -1,6 +1,6 @@
 # AGENTS.md — 入口指针（规约正文不在本文件）
 
-> 本文件是 **Grok build / Grok CLI、Codex、DeepSeek harness (dsh)、Cursor、Jules、Copilot** 等
+> 本文件是 **Grok build / Grok CLI、Codex、DeepSeek harness (dsh)、Cursor、Trae、Jules、Copilot** 等
 > 遵循通用 `AGENTS.md` 约定的 AI 编码工具在本仓库的入口。
 >
 > **规约正文全部位于 `.agent/`，本文件只指路、不抄写条款。**
@@ -32,4 +32,4 @@ bash scripts/verify.sh FEAT-005-your-slug
 ## 维护规则
 
 - 规约变更只允许修改 `.agent/` 下对应文件。
-- 本文件与 `CLAUDE.md`、`.grok/rules/*.md` 均为纯路标，禁止在其中新增、改写或扩写规则条款。
+- 本文件与 `CLAUDE.md`、`.grok/rules/*.md`、`.trae/rules/*.md` 均为纯路标，禁止在其中新增、改写或扩写规则条款。

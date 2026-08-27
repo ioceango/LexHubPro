@@ -124,16 +124,9 @@ LexHubPro/
 
 ## TODO项
 
-下列是仓库里**仍然真实敞口**的事项，不是虚构 backlog。做任何一项都要先走编号目录（见 [04](docs/rules/04-iteration-workflow.md)）。
+门禁级待办已关闭：FEAT-005/006/007 索引已关账；Trae 指针在 [`.trae/rules/00-lexhubpro-rules.md`](.trae/rules/00-lexhubpro-rules.md)；CI 见 [`.github/workflows/docs.yml`](.github/workflows/docs.yml)（`bash scripts/verify.sh --docs-only`）。提交规范见 [09](docs/rules/09-git-commit-and-branch.md)。
 
-| 项 | 说明 |
-|----|------|
-| 索引状态收口 | [`docs/features/README.md`](docs/features/README.md) 里 FEAT-005 / 006 仍标「验证中」、FEAT-007 仍标「开发中」，后续 FEAT 已完成自托管与分层，索引未关账。 |
-| Git 提交 | 提交主题与分支须对齐 `FEAT-NNN` / `BUG-NNN`（[09](docs/rules/09-git-commit-and-branch.md)）。 |
-| Trae 指针文件 | 本仓库未放 `.trae/rules`。Trae 用根 `AGENTS.md` 即可；若要专有入口，只加**指向 `.agent/` 的路标**，禁止复制红线。 |
-| 无 CI | 交付前在本地跑 `bash scripts/verify.sh --docs-only`，改代码再跑对应 pytest / lint / Playwright。 |
-
-不要在未建 FEAT/BUG 目录的情况下直接改业务代码。
+产品方向见下方 **功能规划**（尚未实现）。新工作仍须先建 `FEAT`/`BUG` 编号目录。
 
 ## 功能规划
 
@@ -195,7 +188,7 @@ docker compose up -d
 | **Codex** | 自动读根 [`AGENTS.md`](AGENTS.md)（指针）。注意 Codex 指令体积上限，细则已拆在 `.agent/`。 | 不要写第二份 `AGENTS.override.md` 塞规则正文。 |
 | **Claude Code** | 自动读根 [`CLAUDE.md`](CLAUDE.md)（指针）。 | 不要在 `.claude/rules` 复制 `.agent/`。 |
 | **DeepSeek harness**（dsh） | 无已核实的专有仓库指令格式。走根 `AGENTS.md` → `.agent/`。 | 不要臆造 `.dsh/` 规则树。 |
-| **Trae** | 在 Settings → Rules 中 **include 根 `AGENTS.md`**。若坚持要 Trae 目录，只允许 `.trae/rules` 里一份**指向 `.agent/` 的路标**，与 `AGENTS.md` 同构。 | 不要把 `docs/rules` 或 `.agent` 全文拷进 `.trae/rules`。 |
+| **Trae** | 读根 `AGENTS.md`，并加载 [`.trae/rules/00-lexhubpro-rules.md`](.trae/rules/00-lexhubpro-rules.md)（纯路标）。也可在 Settings → Rules 中 include `AGENTS.md`。 | 不要把 `docs/rules` 或 `.agent` 全文拷进 `.trae/rules`。 |
 | **Cursor** | 读根 `AGENTS.md`。可选 `.cursor/rules` **仅路标**。MCP 可选用根 [`.mcp.json`](.mcp.json)。 | 不要在 `.cursor/rules` 或 `.cursor/skills` 再放一份规约/skill 正文。 |
 | Grok Build / CLI（对照） | `AGENTS.md` **加上** [`.grok/rules/00-lexhubpro-rules.md`](.grok/rules/00-lexhubpro-rules.md)。skills：`.grok/config.toml` 的 `[skills] paths = [".agent/skills"]`。 | 不要删除 `.grok/rules/` 还指望 Grok 自己找到 `.agent/`。 |
 

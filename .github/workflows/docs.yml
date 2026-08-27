@@ -1,0 +1,13 @@
+name: docs
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  docs-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Document compliance gate
+        run: bash scripts/verify.sh --docs-only
