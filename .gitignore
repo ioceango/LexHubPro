@@ -1,0 +1,67 @@
+# 只提交功能与部署所需文件。密钥、缓存、构建产物、IDE、本机覆盖配置一律忽略。
+# 必须进库：源码、docs、.agent、.atoms、scripts、Dockerfile、compose、
+# .env.example、lockfile、.mcp.json、.grok/config.toml 与 .grok/rules。
+
+# --- 密钥与本机环境（保留 .env.example） ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Node / 前端构建与 e2e 产物 ---
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# --- 日志与运行时文件 ---
+logs/
+*.log
+tmp/
+temp/
+*.sqlite
+*.db
+
+# --- 本机合同/上传（禁止把 PDF 正文进库） ---
+uploads/
+*.pdf
+!docs/**/*.pdf
+
+# --- 操作系统与编辑器 ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+.cursor/
+
+# --- 工具本机状态（规则与 MCP 清单要提交） ---
+.grok/sessions/
+.claude/
+*.local

@@ -1,0 +1,7 @@
+node_modules
+dist
+.git
+*.log
+.DS_Store
+# 这是 pnpm 11 的 allowBuilds 配置，pnpm 9 会把它当 workspace 导致 build 失败
+pnpm-workspace.yaml

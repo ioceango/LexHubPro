@@ -1,0 +1,23 @@
+# Playwright MCP：用仓库内已安装的 @playwright/mcp，不走 npx 下载。
+# 浏览器复用本机缓存 PLAYWRIGHT_BROWSERS_PATH。
+# command/args 与仓库根 .mcp.json 对齐；改命令时先改 .mcp.json 再同步本节。
+# Grok 默认不扫描 .agent/skills/，须显式加入 paths。
+
+[skills]
+paths = [".agent/skills"]
+
+[mcp_servers.playwright]
+command = "node"
+args = [
+  "app/frontend/node_modules/@playwright/mcp/cli.js",
+  "--headless",
+  "--isolated",
+  "--ignore-https-errors",
+  "--caps",
+  "vision",
+]
+startup_timeout_sec = 90
+enabled = true
+
+[mcp_servers.playwright.env]
+PLAYWRIGHT_BROWSERS_PATH = "${HOME}/Library/Caches/ms-playwright"

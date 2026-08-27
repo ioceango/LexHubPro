@@ -1,0 +1,209 @@
+# ==============================================================================
+# LexHubPro 自托管编排（Docker Compose）
+# ------------------------------------------------------------------------------
+#   cp .env.example .env && docker compose build && docker compose up -d
+# 详见 docs/rules/08-deployment.md。
+# 已有数据卷 legalguard_* 需改名为 lexhubpro_* 或覆盖卷名，否则会看到空库。
+# ==============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lexhubpro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lexhubpro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lexhubpro}
+      POSTGRES_DB: ${POSTGRES_DB:-lexhubpro}
+      # 统一时区，避免 created_at/updated_at 与应用层不一致
+      TZ: Asia/Shanghai
+    ports:
+      # 仅为本地调试暴露；生产自托管建议移除该映射，只在内部网络访问
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - lexhubpro_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # backend 必须等数据库真正可接受连接后再启动，否则首次建表会失败
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lexhubpro} -d ${POSTGRES_DB:-lexhubpro}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - lexhubpro
+
+  minio:
+    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
+    container_name: lexhubpro-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lexhubpro}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change_me_in_production}
+      TZ: Asia/Shanghai
+    ports:
+      # 9000 为 S3 API，9001 为管理台；生产自托管建议只在内网暴露 9001
+      - "${MINIO_HOST_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
+    volumes:
+      - lexhubpro_minio_data:/data
+    healthcheck:
+      # minio 服务镜像不含 mc，不能用 `mc ready local`。live 探活是官方健康端点。
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - lexhubpro
+
+  minio-init:
+    # 一次性任务：幂等创建合同桶。`mb --ignore-existing` 保证重复执行不报错，
+    # 且不设置任何公开读策略——合同属敏感数据，只能通过限时预签名 URL 访问。
+    image: minio/mc:RELEASE.2024-09-16T17-43-14Z
+    container_name: lexhubpro-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/$${CONTRACT_BUCKET} &&
+      mc anonymous set none local/$${CONTRACT_BUCKET} &&
+      echo 'minio bucket ready'
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lexhubpro}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change_me_in_production}
+      CONTRACT_BUCKET: ${CONTRACT_BUCKET:-contracts}
+    restart: "no"
+    networks:
+      - lexhubpro
+
+  mailpit:
+    # 本地验证码收件箱。Web UI：http://localhost:8025
+    image: axllent/mailpit:v1.21.8
+    container_name: lexhubpro-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+    environment:
+      TZ: Asia/Shanghai
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8025/api/v1/info"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    networks:
+      - lexhubpro
+
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: lexhubpro-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        # 等 bucket 初始化任务成功退出后再启动，避免启动自检因桶缺失而失败
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_healthy
+    environment:
+      # 容器网络内必须用服务名 db，不能用 localhost
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lexhubpro}:${POSTGRES_PASSWORD:-lexhubpro}@db:5432/${POSTGRES_DB:-lexhubpro}
+      DEBUG: ${DEBUG:-false}
+      HOST: 0.0.0.0
+      PORT: 8000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # 供 OIDC 登出回跳使用；缺失时后端会回退到请求 host 并记 WARNING
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PYTHON_BACKEND_URL: ${PYTHON_BACKEND_URL:-http://localhost:8000}
+      # 业务可调参数，语义见 .env.example
+      REVIEW_MODEL: ${REVIEW_MODEL:-claude-opus-5}
+      REVIEW_TEMPERATURE: ${REVIEW_TEMPERATURE:-0.2}
+      REVIEW_MAX_TOKENS: ${REVIEW_MAX_TOKENS:-8192}
+      REVIEW_MAX_CONTRACT_CHARS: ${REVIEW_MAX_CONTRACT_CHARS:-60000}
+      MAX_CONTRACT_FILE_MB: ${MAX_CONTRACT_FILE_MB:-15}
+      MAX_CONTRACT_PAGE_COUNT: ${MAX_CONTRACT_PAGE_COUNT:-80}
+      CONTRACT_BUCKET: ${CONTRACT_BUCKET:-contracts}
+      # 自托管形态：认证与存储都切到自建实现（平台托管能力在此不可用）
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      AUTH_PUBLIC_BASE_URL: ${AUTH_PUBLIC_BASE_URL:-http://localhost:5173}
+      AUTH_BOOTSTRAP_ADMIN_EMAIL: ${AUTH_BOOTSTRAP_ADMIN_EMAIL:-}
+      # 配置了 SMTP 后注册必须验证邮箱。默认走 compose 内 Mailpit。
+      AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
+      SMTP_PROVIDER: ${SMTP_PROVIDER:-mailpit}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_SSL: ${SMTP_SSL:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-}
+      # 容器网络内必须用服务名 minio，不能用 localhost
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-lexhubpro}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change_me_in_production}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_ADDRESSING_STYLE: ${MINIO_ADDRESSING_STYLE:-path}
+      MINIO_VERIFY_TLS: ${MINIO_VERIFY_TLS:-false}
+      IS_LAMBDA: "false"
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:8000"
+    volumes:
+      # 日志持久化到宿主机，清理策略仍由 utils/logging_utils.py 的环境变量控制
+      - ./logs/backend:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3).status == 200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+    networks:
+      - lexhubpro
+
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+      args:
+        # VITE_ 变量是构建期注入，必须在 build args 传入（运行期改环境变量无效）
+        VITE_APP_NAME: ${VITE_APP_NAME:-LexHubPro}
+        VITE_REVIEW_API_TIMEOUT_MS: ${VITE_REVIEW_API_TIMEOUT_MS:-600000}
+        VITE_MAX_CONTRACT_FILE_MB: ${VITE_MAX_CONTRACT_FILE_MB:-15}
+        VITE_HISTORY_PAGE_SIZE: ${VITE_HISTORY_PAGE_SIZE:-20}
+    container_name: lexhubpro-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_HOST_PORT:-5173}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - lexhubpro
+
+volumes:
+  lexhubpro_pgdata:
+    # 注意：docker compose down -v 会永久删除该卷中的全部业务数据，生产禁止使用
+    driver: local
+  lexhubpro_minio_data:
+    # 合同原文所在卷。与数据库卷分离，便于按不同策略备份；同样禁止 down -v
+    driver: local
+
+networks:
+  lexhubpro:
+    driver: bridge
