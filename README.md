@@ -6,13 +6,37 @@
 
 规约正文在 [`.agent/`](.agent/README.md)，细则在 [`docs/rules/`](docs/README.md)。本文件是给人读的入口，不另立一套规则。
 
-### 界面预览
+### 在线演示
 
-无在线演示环境。下列截图来自仓库内 Playwright 归档，可先看效果再部署。
+线上环境：[https://alphasight.fuxingbros.com](https://alphasight.fuxingbros.com)
 
-| 首页 | 登录 |
-|------|------|
-| ![首页](docs/features/FEAT-011-rules-pointers-mcp-skills/test-report/S01-home-entry.png) | ![登录](docs/features/FEAT-011-rules-pointers-mcp-skills/test-report/S02-login-entry.png) |
+下列截图与录像来自对该站点的真实操作：登录后上传 `show/测试合同.pdf`，使用账号已启用的 `deepseek-v4-flash` 完成 AI 审查。操作过程录像（WebM，浏览器或本地播放器打开）：[docs/demo/review-flow.webm](docs/demo/review-flow.webm)。完成后的报告示例：[https://alphasight.fuxingbros.com/report/1](https://alphasight.fuxingbros.com/report/1)。
+
+演示账号不写入仓库。需要试用请向维护者索取。重录走 `scripts/online-demo.mjs`，账号密码只读环境变量 `ONLINE_DEMO_EMAIL` / `ONLINE_DEMO_PASSWORD`。
+
+**1. 首页** — 未登录时的产品介绍与入口。
+
+![首页](docs/demo/S01-home.png)
+
+**2. 登录** — 邮箱 + 密码进入 LexHubPro。
+
+![登录](docs/demo/S02-login.png)
+
+**3. 上传审查** — 登录后进入审查页，当前启用模型为 `deepseek-v4-flash`。
+
+![审查页](docs/demo/S03-logged-in-review.png)
+
+**4. 选择合同** — 选中测试合同 PDF（约 0.12 MB），名称自动填入。
+
+![已选文件](docs/demo/S04-file-selected.png)
+
+**5. 审查进行中** — 点击「开始 AI 审查」后加密上传并调用模型，请勿关闭页面。
+
+![审查进行中](docs/demo/S05-review-in-progress.png)
+
+**6. 结构化报告** — 整体评分、风险 / 缺失 / 合规 / 关键条款与修改建议；页脚含「仅供参考，不构成正式法律意见」。
+
+![审查报告](docs/demo/S06-report.png)
 
 ## 项目架构
 
@@ -111,13 +135,16 @@ LexHubPro/
 │       ├── nginx.conf        # 生产静态站 + /api 反代
 │       └── Dockerfile
 ├── docs/
+│   ├── demo/                 # 线上演示截图与录像
 │   ├── README.md             # 规范索引
 │   ├── rules/                # 01–09 细则
 │   ├── features/             # FEAT-xxx 四文档
 │   ├── bug-fix/              # BUG-xxx 四文档
 │   ├── ddl/database-ddl-er.md
 │   └── templates/
-└── scripts/verify.sh         # 文档门禁 + 可选全量验证
+└── scripts/
+    ├── verify.sh             # 文档门禁 + 可选全量验证
+    └── online-demo.mjs       # 线上演示录制（账号走环境变量，禁止写进仓库）
 ```
 
 表结构目录：[`docs/ddl/database-ddl-er.md`](docs/ddl/database-ddl-er.md)。改表必须同步该文件。
