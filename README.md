@@ -112,7 +112,7 @@ LexHubPro/
 │   └── templates/
 └── scripts/
     ├── verify.sh             # 文档门禁 + 可选全量验证
-    └── online-demo.mjs       # 线上演示录制（账号走环境变量，禁止写进仓库）
+    └── online-demo.mjs       # 线上演示录制（读 .env #demo show config，禁止把凭据写进仓库）
 ```
 
 表结构目录：[`docs/ddl/database-ddl-er.md`](docs/ddl/database-ddl-er.md)。改表必须同步该文件。
@@ -193,9 +193,33 @@ docker compose up -d
 
 线上环境：[https://alphasight.fuxingbros.com](https://alphasight.fuxingbros.com)
 
-下列截图与录像来自对该站点的真实操作：登录后上传 `show/测试合同.pdf`，使用账号已启用的 `deepseek-v4-flash` 完成 AI 审查。操作过程录像（WebM，浏览器或本地播放器打开）：[docs/demo/review-flow.webm](docs/demo/review-flow.webm)。完成后的报告示例：[https://alphasight.fuxingbros.com/report/1](https://alphasight.fuxingbros.com/report/1)。
+下列截图与录像来自对该站点的真实操作。先在「模型配置」保存 OpenRouter Key、拉取目录并启用 `z-ai/glm-5.3-flash`（界面显示名 **Z.ai: GLM 5.3 Flash**），再上传 `show/测试合同.pdf` 完成审查。同一用户同时只能启用一个模型。
 
-演示账号不写入仓库。需要试用请向维护者索取。重录走 `scripts/online-demo.mjs`，账号密码只读环境变量 `ONLINE_DEMO_EMAIL` / `ONLINE_DEMO_PASSWORD`。
+- 模型配置录像：[docs/demo/model-config.webm](docs/demo/model-config.webm)
+- 合同审查录像：[docs/demo/review-flow.webm](docs/demo/review-flow.webm)
+- 本次审查报告示例：[https://alphasight.fuxingbros.com/report/2](https://alphasight.fuxingbros.com/report/2)
+
+演示账号、API Key 不写入仓库。需要试用请向维护者索取。重录走 `scripts/online-demo.mjs`，从本机 `.env` 的 `#demo show config` 读取 `demo_app_url` / `demo_account` / `demo_passwd` / `demo_openrouter_key` / `demo_openrouter_modle` / `pdf_path`（也可用同名环境变量覆盖）。截图只含 Key 掩码，不含明文。
+
+### 模型配置与启用
+
+**1. 模型配置页** — DeepSeek 与 OpenRouter 各一块；填写 Key、拉取模型后只能启用其中一个。
+
+![模型配置](docs/demo/M01-model-settings.png)
+
+**2. 保存 OpenRouter Key** — 保存成功后输入框清空，页面只显示掩码（如 `****5527`）。
+
+![已保存 Key](docs/demo/M02-key-saved.png)
+
+**3. 拉取并搜索模型** — 拉取 OpenRouter 目录，搜索 `glm-5.3-flash`，命中 `Z.ai: GLM 5.3 Flash`。
+
+![搜索模型](docs/demo/M03-catalog-search.png)
+
+**4. 加入并启用** — 加入「我的模型」后单选启用；DeepSeek 侧自动取消启用。
+
+![已启用模型](docs/demo/M04-model-enabled.png)
+
+### 上传合同审查
 
 **1. 首页** — 未登录时的产品介绍与入口。
 
@@ -205,7 +229,7 @@ docker compose up -d
 
 ![登录](docs/demo/S02-login.png)
 
-**3. 上传审查** — 登录后进入审查页，当前启用模型为 `deepseek-v4-flash`。
+**3. 上传审查** — 登录后进入审查页，当前启用模型为 `Z.ai: GLM 5.3 Flash`。
 
 ![审查页](docs/demo/S03-logged-in-review.png)
 
